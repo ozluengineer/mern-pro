@@ -66,16 +66,12 @@ pipeline {
     
     post {
         always {
-            node('default') {  // Burada 'default' veya uygun bir etiket belirleyin
-                script {
-                    withCredentials([usernamePassword(credentialsId: 'aws', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
-                        sh '''
-                        terraform destroy -auto-approve
-                        '''
-                    }
-                    cleanWs()
-                }
-            }
+            echo 'Deleting all local images'
+            sh 'docker image prune -af'
+            echo 'Tear down the Kubernetes Cluster'
+            sh """
+            terraform destroy -auto-approve -no-color
+            """
         }
     }
 }
