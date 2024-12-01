@@ -63,4 +63,20 @@ pipeline {
             }
         }
     }
+    
+    post {
+        always {
+            script {
+                cleanWs()
+            }
+
+            script {
+                withCredentials([usernamePassword(credentialsId: 'aws', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh '''
+                    terraform destroy -auto-approve
+                    '''
+                }
+            }
+        }
+    }
 }
