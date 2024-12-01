@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+        - name: backend
+          image: engineer02/backend
+          env:
+            - name: ATLAS_URI
+              value: "mongodb://mongodb"
+          ports:
+            - containerPort: 5050
+      initContainers:
+        - name: wait-for-mongodb
+          image: busybox
+          command:
+            - sh
+            - -c
+            - >
+              until nc -z mongodb 27017;
+              do
+                echo "Waiting for MongoDB...";
+                sleep 2;
+              done;
+              echo "MongoDB is up!";
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+spec:
+  selector:
+    app: backend
+  ports:
+    - protocol: TCP
+      port: 5050
+      targetPort: 5050
