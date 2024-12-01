@@ -1,0 +1,72 @@
+pipeline {
+    agent any
+    
+    environment {
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub')
+        AWS_CREDENTIALS = credentials('aws')
+    }
+    
+    stages {
+        stage('Checkout Code') {
+            steps {
+                checkout scm
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    sh './test_script.sh'
+                }
+            }
+        }
+        
+        stage('Build and Push Docker Images') {
+            steps {
+                script {
+                    sh './docker_script.sh $DOCKERHUB_CREDENTIALS_USR $DOCKERHUB_CREDENTIALS_PSW'
+                }
+            }
+        }
+        
+        stage('Install Terraform') {
+            steps {
+                script {
+                    sh './install_terraform.sh'
+                }
+            }
+        }
+        
+        stage('Create k3s Cluster') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'aws', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY')]) {
+                    sh './create_k3s_cluster.sh'
+                }
+            }
+        }
+        
+        stage('Get Kubeconfig') {
+            steps {
+                sh './kubeconfig.sh'
+            }
+        }
+        
+        stage('Deploy to k3s Cluster') {
+            steps {
+                script {
+                    withEnv(['KUBECONFIG=kubeconfig.yaml']) {
+                        sh '''
+                        kubectl apply -f k8s/
+                        '''
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        always {
+            cleanWs()
+        }
+    }
+}
