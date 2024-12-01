@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  mongodb:
+    image: mongo
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    networks:
+      - mern-network
+    volumes:
+      - mongo-data:/data/db
+  backend:
+    image: engineer02/backend
+    container_name: backend
+    ports:
+      - "5050:5050"
+    networks:
+      - mern-network
+    depends_on:
+      - mongodb
+    environment:
+      ATLAS_URI: mongodb://mongodb
+  frontend:
+    image: engineer02/frontend
+    container_name: frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - mern-network
+    depends_on:
+      - backend
+volumes:
+  mongo-data:
+networks:
+  mern-network:
+    driver: bridge
